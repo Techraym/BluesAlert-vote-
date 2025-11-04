@@ -1,9 +1,3 @@
- (cd "$(git rev-parse --show-toplevel)" && git apply --3way <<'EOF' 
-diff --git a/README.md b/README.md
-index 0059d513e283e42f71d6b8dd19a57532237dccbc..3c788e2c508b99c848df60bfe6ca4960e6ea312e 100644
---- a/README.md
-+++ b/README.md
-@@ -1,2 +1,50 @@
 -# BluesAlert-vote-
 -Stem site voor een muzikale top 100/1000
 +# BluesAlert Vote
