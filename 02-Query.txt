@@ -1,0 +1,19 @@
+SELECT 
+    s.artist AS artist, 
+    s.title AS title, 
+    COUNT(s.title) AS aantal_keuzes
+FROM 
+    songs s
+INNER JOIN 
+    koppel k ON s.id = k.sid
+INNER JOIN 
+    users u ON k.uid = u.id
+WHERE 
+    u.active = 1
+GROUP BY 
+    s.title
+ORDER BY 
+    aantal_keuzes DESC;
+
+
+selecteer juiste database en kies juiste kollomen

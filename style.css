@@ -1,0 +1,41 @@
+body {
+
+padding:0;
+width:80%;
+     margin:0 auto;
+}
+section {
+     
+ }
+ section input{
+    display: inline-block;    
+ }
+ section label span{
+ 	display: inline-block;
+ 	text-align:right; 	
+ 	min-width: 100px;
+ }
+ section label{ 	
+     min-width: 120px;
+ }
+#lijst{
+	list-style-type:none;
+}
+#lijst li {
+	background-color:#eee;
+}
+#lijst li:hover {
+	background-color:#ccc;
+}
+img{
+	max-width:100%;
+	height:auto;
+}
+a {
+	text-decoration:none;
+	color:#ff3300;
+}
+a:hover{
+	text-decoration:underline;
+	color:#ff0000;
+}

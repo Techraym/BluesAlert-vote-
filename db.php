@@ -1,0 +1,139 @@
+<?php
+error_reporting(0);	
+    //db functions for blues alert top100
+  
+    include_once("conn.php");
+	/*
+	 * newEntry function
+	 * @returns Boolean
+	 * @var $data is an array of entry content
+	 * @goal Add data to db tables validate and songs
+	 */
+    function newEntry($data){
+    	$conn = conn();
+		$hash = md5($data['email']);
+		
+		//check of de data al bekend is
+		$cq = "SELECT * FROM users WHERE hash = '$hash'";
+		$cr = mysqli_query($conn, $cq);
+		if(mysqli_num_rows($cr)>0) {
+			return "<p class='error'>Uw stem is al opgeslagen, check uw email voor de validatie code, (Niks ontvangen kijk dan ook even in je SPAM box.)<p>";
+		}	
+		//prepare data
+		foreach($data as $key=>$val){
+			//first delete whitespaces before and after
+			$val = trim($val);
+			if($key == 'naam' || $key == 'email') {
+				if ($key=='naam' && ($val=="" || $val == NULL)) $data['naam']="Gast";
+				if ($key =='naam') $data['naam'] = htmlentities($val, ENT_COMPAT, 'UTF-8');
+				
+				$data[$key] = addslashes($val);						
+			}			
+			else {
+				if (!empty($val))
+				{
+					$val = htmlentities($val, ENT_COMPAT, 'UTF-8');
+					$val = ucwords(strtolower($val));
+					$data[$key] = addslashes($val);	
+				}
+			}
+			
+		}		
+		//insert into the database
+		$q = "INSERT INTO users ( name, email, hash, active) VALUES ( '".$data['naam']."', '".$data['email']."', '$hash', 0)";
+		$r = mysqli_query($conn, $q);
+		if (!$r) {
+    		die('Fout bij het opslaan van uw stemmen');
+		}else {
+			//user id 
+			$uid = mysqli_insert_id($conn);
+			//insert the songs
+			/*
+			in data are 6 songs, 3 with an id and sure and 3 not sure handfilled
+			first the ones with id
+			then the ones without id who need to get an db id if they are not empty
+			
+			*/
+			$sid1 = intval($data['song1']);
+			$sid2 = intval($data['song2']);
+			$sid3 = intval($data['song3']);
+			$q = "INSERT INTO koppel ( uid, sid) VALUES ( ".$uid.",". $sid1."),(". $uid.",". $sid2."),(".$uid.",". $sid3.")";
+			$r = mysqli_query($conn,$q);
+			if (!$r) die('Fout in het opslaan van uw stemmen !');
+			//now find out nr of custom entries
+			$values = "";
+			$valuesArr = array();
+			if (!empty($data['artiest4']) && !empty($data['titel4']))
+			{
+				// Set the column values array.
+				$valuesArr[] = "('" . $data['artiest4'] . "','" . $data['titel4'] . "')";
+			}
+			if (!empty($data['artiest5']) && !empty($data['titel5']))
+			{
+				// Set the column values array.
+				$valuesArr[] = "('" . $data['artiest5'] . "','" . $data['titel5'] . "')";
+			}
+			if (!empty($data['artiest6']) && !empty($data['titel6']))
+			{
+				// Set the column values array.
+				$valuesArr[] = "('" . $data['artiest6'] . "','" . $data['titel6'] . "')";
+			}
+			if (count($valuesArr) > 0)
+			{
+				$values = implode(", ", $valuesArr);
+				$q = "INSERT INTO songs ( artist, title) VALUES ".$values;
+				$r = mysqli_query($conn,$q);
+				if (!$r) {
+					die('Invalid query: ' . mysql_error());
+				} else {
+					//laatste id's voor koppel query
+					$song_id = mysqli_insert_id($conn);
+					$nrEntries = count($valuesArr);
+					$cnt = 0;
+					$sv = "";
+					$svArr = array();
+					while ($nrEntries > 0) {
+						// Set the column values array.
+						$s_id = $song_id +intval($cnt);
+						$svArr[] = "(" . $uid . "," . $s_id  . ")";
+						$cnt++;
+						$nrEntries--;
+					}
+					$sv = implode(", ", $svArr);
+					$q = "INSERT INTO koppel ( uid, sid) VALUES ".$sv;
+					$r = mysqli_query($conn,$q);
+					if (!$r) die('Er is een fout opgetreden bij het opslaan van uw songs');
+				}
+			}
+			
+				//send email for validation
+				$to = $data['email'];
+				$subject = 'The Alice Dutch Blues Top100 Allertijden';
+				$message ="Hallo ".stripslashes($data['naam']).", <br><br>
+
+Hartelijk dank voor uw inzending, om deze te bevestigen vragen we u de onderstaande link te gebruiken, of de code in te voeren op de pagina waar u gestemd heeft.
+
+De link: <a href='https://bluesalert.nl/validate.php?v=".$hash."'>Mijn Stem !</a>
+<br><br>
+De code die u in kunt vullen (knippen en plakken): ".$hash."
+<br><br>
+Hartelijk dank voor uw inzending,<br>
+The Alice Dutch Blues Top100 Allertijden.";
+				
+                $headers = "From: bluesalert@raysnijder.nl\r\n";
+                $headers .= "Reply-To: bluesalert@raysnijder.nl\r\n";
+                $headers .= "MIME-Version: 1.0\r\n";
+                $headers .= "Content-Type: text/html; charset=UTF-8\r\n";
+
+	       		// Send
+				if (mail($to, $subject, $message, $headers)) {
+	  				return 'mail verzonden';
+				} else {
+	  				return 'Verzenden mislukt';
+				}
+		}		
+		clean();
+		
+    }
+
+?>
